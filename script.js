@@ -531,6 +531,8 @@ function addPost(){
 // ============ 6. VIDEOS ============
 
 function renderVideos() {
+  const container = document.getElementById('video-list');
+  if(!container) return;
   let html = '';
   for (const v of videos) {
     const media = v.src ? '<video src="' + v.src + '" controls loop playsinline></video>' : '';
@@ -548,8 +550,9 @@ function renderVideos() {
       '<div class="info"><b>' + safe(v.by) + '</b><br>' + safe(v.dept) + ' · ' + safe(v.index) + ' · ' + safe(v.skills) +
       '<br>' + safe(v.desc) + comments + '</div></div>';
   }
-  document.getElementById('video-list').innerHTML = html;
+  container.innerHTML = html;
 }
+
 function addVideo() {
   if (!requiredlogin()) return;
   const file = document.getElementById('v-file').files[0];
@@ -566,6 +569,7 @@ function addVideo() {
   document.getElementById('v-desc').value = '';
   renderVideos();
 }
+
 function likeVideo(id) {
   if (!requiredlogin()) return;
   const video = videos.find(v => v.id === id);
@@ -573,6 +577,7 @@ function likeVideo(id) {
   toggleName(video.likes);
   renderVideos();
 }
+
 async function addVideoComment(id) {
   if (!requiredlogin()) return;
   const video = videos.find(v => v.id === id);
@@ -586,20 +591,21 @@ async function addVideoComment(id) {
 
 
 // ==========================================
-// PLACEHOLDERS FOR OTHER PAGES (Lost, News, DM, Notifs, Profile)
-// ==========================================
+// ============ 7. LOST AND FOUND ============
 function renderLost() {
   // CHIPS
   let chips = '';
   for (const c of ['All', 'Phone', 'Bag', 'Book', 'Pen', 'Other']){
     chips += '<button class="chip ' + (c === category ? 'on' : '') + '" onclick="setLostCategory(\'' + c + '\')">' + c + '</button>';
   }
-  document.getElementById('lost-chips').innerHTML = chips;
+  const chipsEl = document.getElementById('lost-chips');
+  if(chipsEl) chipsEl.innerHTML = chips;
 
-  // ITEMS (FILTERED BY CATEGORY AND SEARCHE WORDS) ///////////////////////
-  const search = document.getElementById('lost-search').value.toLowerCase();
+  // ITEMS (FILTERED BY CATEGORY AND SEARCH WORDS) ///////////////////////
+  const searchInput = document.getElementById('lost-search');
+  const search = searchInput ? searchInput.value.toLowerCase() : '';
   let html = '';
-    for (const item of data.lost) {
+  for (const item of data.lost) {
     if (category !== 'All' && item.category !== category) continue;
     if (!(item.title + ' ' + item.comment + ' ' + item.category + ' ' + item.by).toLowerCase().includes(search)) continue;
     html +=
@@ -612,12 +618,15 @@ function renderLost() {
       (item.by === me && !item.recovered ? '<button class="btn" onclick="markRecovered(' + item.id + ')">Mark as recovered</button>' : '') +
       '</div>';
   }
-  document.getElementById('lost-list').innerHTML = html || '<p class="muted">No items found.</p>';
+  const lostList = document.getElementById('lost-list');
+  if(lostList) lostList.innerHTML = html || '<p class="muted">No items found.</p>';
 }
+
 function setLostCategory(value) {
   category = value;
   renderLost();
 }
+
 function addLost() {
   if (!requiredlogin()) return;
   const title = document.getElementById('l-title').value.trim();
@@ -636,6 +645,7 @@ function addLost() {
     renderLost();
   });
 }
+
 function markRecovered(id) {
   if (!requiredlogin()) return;
   const item = data.lost.find(i => i.id === id);
@@ -644,14 +654,24 @@ function markRecovered(id) {
   save();
   renderLost();
 }
+
+
 // ============ 8. ANNOUNCEMENTS ============////////////////////////////////
-function renderNews() {   let html = '';
+function renderNews() {   
+  const newsList = document.getElementById('news-list');
+  if(!newsList) return;
+  let html = '';
   for (const a of announcements) {
     html += '<div class="card news"><b>' + a.from + '</b><p>' + a.text + '</p></div>';
   }
-  document.getElementById('news-list').innerHTML = html; }
-  // ============ 9. PROFILE ============
-function renderProfile() {   const box = document.getElementById('profile-box');
+  newsList.innerHTML = html; 
+}
+
+
+// ============ 9. PROFILE ============
+function renderProfile() {   
+  const box = document.getElementById('profile-box');
+  if(!box) return;
   if (!me) { box.innerHTML = '<p>Please log in to see your profile.</p><button class="btn" onclick="toggleAuth()">Log in</button>'; return; }
   const u = myUser();
   const postCount = data.post.filter(p => p.author === me).length;
@@ -665,6 +685,7 @@ function renderProfile() {   const box = document.getElementById('profile-box');
     '<input id="p-skills" placeholder="Role / skills" value="' + safeAttr(u.skills) + '">' +
     '<button class="btn" onclick="saveProfile()">Save profile</button>';
 }
+
 function saveProfile() {
   if (!requiredlogin()) return;
   const u = myUser();
@@ -676,6 +697,8 @@ function saveProfile() {
   showToast('Profile saved.');
   renderProfile();
 }
+
+
 // ============ 10. DIRECT MESSAGES ============
 function startChat(name) {
   if (!requiredlogin()) return;
@@ -684,8 +707,10 @@ function startChat(name) {
   chatWith = name;
   showPage('dm');
 }
+
 function renderDM() {
   const box = document.getElementById('dm-box');
+  if(!box) return;
   if (!me) { box.innerHTML = '<p>Please log in to send messages.</p>'; return; }
 
   // A) Chat screen with one person
@@ -700,6 +725,7 @@ function renderDM() {
     box.innerHTML = html;
     return;
   }
+
   // B) List of chats + start a new one
   const people = [];
   for (const m of data.messages) {
@@ -713,18 +739,25 @@ function renderDM() {
     button.addEventListener('click', () => startChat(button.dataset.chat));
   });
 }
+
 function sendMessage() {
   if (!requiredlogin()) return;
   const input = document.getElementById('dm-text');
+  if(!input) return;
   const text = input.value.trim();
   if (!text) return;
   data.messages.push({ from: me, to: chatWith, text: text });
   notify(chatWith, me + ' sent you a message');
-  save(); renderDM();
+  save(); 
+  renderDM();
 }
+
+
 // ============ 11. NOTIFICATIONS ============
 function renderNotifs() { 
-  if(!me) { document.getElementById('notif-list').innerHTML = '<p>Please log in.</p>'; return;}
+  const notifList = document.getElementById('notif-list');
+  if(!notifList) return;
+  if(!me) { notifList.innerHTML = '<p>Please log in.</p>'; return;}
   let html = '';
   for (const n of data.notifs){
     if (n.to !== me) continue;
@@ -734,11 +767,5 @@ function renderNotifs() {
   // Mark all notifications as read when opened
   save();
   renderHeader();
-  document.getElementById('notif-list').innerHTML = html || '<p class="muted">No notifications yet.</p>';
+  notifList.innerHTML = html || '<p class="muted">No notifications yet.</p>';
 }
-
-// ============ 12. START THE APP ============
-
-document.getElementById('ticker-text').textContent =
-  announcements.map(a => a.from + ': ' + a.text).join('      •      ');
-showPage('feed');
